@@ -1,5 +1,11 @@
 package com.xing.imheres;
 
+import com.github.qcloudsms.SmsSingleSender;
+import com.github.qcloudsms.SmsSingleSenderResult;
+import com.github.qcloudsms.httpclient.HTTPException;
+import org.json.JSONException;
+
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
@@ -9,10 +15,8 @@ import java.util.Date;
  */
 public class Test {
     public static void main(String []args){
-
-        Date dNow = new Date( );
-        SimpleDateFormat ft = new SimpleDateFormat ("yy/MM/dd HH:MM");
-
-        System.out.println("Current Date: " + ft.format(dNow));
+        for(int j = 0; j< 100; j++){
+            System.out.println((int)((Math.random()*9+1)*100000));
+        }
     }
 }

@@ -7,7 +7,7 @@ package com.xing.imheres.controller;
 
 import com.xing.imheres.entity.Message;
 import com.xing.imheres.repository.MessageRepository;
-import com.xing.imheres.util.Map;
+import com.xing.imheres.util.CommonUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,7 +25,7 @@ public class MessageController {
         List<Message> all = msgRepository.findAll();
         List<Message> msgs = new ArrayList<>();
         for(Message msg : all)
-            if(Map.getDistance(lat,lon,msg.getLat(),msg.getLon()) < 1000)
+            if(CommonUtils.getDistance(lat,lon,msg.getLat(),msg.getLon()) < 1000)
                 msgs.add(msg);
         return msgs;
     }
@@ -35,4 +35,5 @@ public class MessageController {
     public Message addMessage(@RequestBody Message msg){
         return msgRepository.save(msg);
     }
+
 }
