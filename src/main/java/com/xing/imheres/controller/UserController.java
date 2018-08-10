@@ -61,52 +61,85 @@ public class UserController {
      *
      * putPassAfterEnsure函数通过接受帐号以及密码，常规判断通过后重设密码，将用户状态设置为User.Common
      *
-     * putPassAfterRegister
+     * 注册流程可以留下来两张垃圾数据 ： 1为验证码验证成功后不设置密码的，这样帐号就一直处于等待设置密码状态，成为一个死帐号
+     *                               2为超时的，这个可以每日定时删数据库中超时状态的帐号比较好解决
      * @param account
      * @return
      */
     @GetMapping(value = "/register/{account}")
     public RegisterResult register(@PathVariable("account")String account){
         RegisterResult result = new RegisterResult();
-        if(userRepository.existsByAccount(account)){
+        User user = userRepository.findUserByAccount(account);
+        if(user == null || user.getState() == User.REGISTER_OUT_TIME){
             result.setCode(RegisterResult.FAIL);
             String s = CommonUtils.generateEnsureCode();
             TencentSMS.sendSMS(account, s);
-            User user = new User();
+            if(user == null)
+                user = new User();
             user.setAccount(account);
-
             //此处为了解决pass字段不能为空所以零时生成一个随机密码
             user.setPass(CommonUtils.generateEnsureCode());
-
             user.setEnsureCode(s);
             user.setEnsureTime(new Date().getTime());
             user.setState(User.WAIT_ENSURECODE);
             userRepository.save(user);
-
-            new Timer().schedule(new TimerTask() {
-                @Override
-                public void run() {
-                    User usr = userRepository.findUserByAccount(account);
-                    if(usr.getState() == User.WAIT_ENSURECODE || usr.getState() == User.WAIT_PASS_RESET)
-                        userRepository.delete(usr);
-                }
-            },ENSURECODE_EXPIRATION);
-        }else {
+        }else{
             result.setCode(RegisterResult.FAIL);
-
         }
         return result;
     }
 
+    /**
+     *   code : RegisterResult.ACCOUNT_NOT_EXIST 4 账户不存在，根本没经过Register函数
+     *          RegisterResult.ENSURECODE_OUT_TIME 3 的确刚刚在注册，但是已经超时
+     *          RegisterResult.SUCCESS 1 成功
+     *          RegisterResult.FAIL 0 失败
+     */
     @GetMapping(value = "/register/ensureCode/{account}")
     public RegisterResult ensureCodeAfterRegister(@PathVariable("account")String account,@RequestParam("ensureCode")String ensureCode){
         RegisterResult result = new RegisterResult();
         User user = userRepository.findUserByAccount(account);
         if (user == null){
-            result.setCode(RegisterResult.FAIL);
+            result.setCode(RegisterResult.ACCOUNT_NOT_EXIST);
         }else{
-            if(user.getState() == User.WAIT_ENSURECODE && (new Date().getTime() - user.getEnsureTime() < ENSURECODE_EXPIRATION)){
+            boolean isIn = (new Date().getTime() - user.getEnsureTime() < ENSURECODE_EXPIRATION);
+            if(!isIn){
+                result.setCode(RegisterResult.ENSURECODE_OUT_TIME);
+                user.setState(User.REGISTER_OUT_TIME);
+                userRepository.save(user);
+            }else if(user.getState() == User.WAIT_ENSURECODE&&user.getEnsureCode().equals(ensureCode)){
                 user.setState(User.WAIT_PASS_RESET);
+                userRepository.save(user);
+                result.setCode(RegisterResult.SUCCESS);
+            }else if(user.getState() == User.WAIT_ENSURECODE&&!user.getEnsureCode().equals(ensureCode)){
+                result.setCode(RegisterResult.ENSURECODE_ERROR);
+            } else{
+                result.setCode(RegisterResult.FAIL);
+            }
+        }
+        return result;
+    }
+
+    /**
+     * 重置密码
+     * @param account
+     * @return 检测RegisterResult.code
+     * code：RegisterResult.ACCOUNT_NOT_EXIST 4 帐号不存在
+     *       RegisterResult.SUCCESS 1 重置成功
+     *       RegisterResult.FAIL 0 重置失败
+     */
+    @GetMapping(value = "/register/resetEnsureCode/{account}")
+    public RegisterResult resetEnsureCode(@PathVariable("account")String account){
+        RegisterResult result = new RegisterResult();
+        User user = userRepository.findUserByAccount(account);
+        if(user == null){
+            result.setCode(RegisterResult.ACCOUNT_NOT_EXIST);
+        }else{
+            if(user.getState() == User.WAIT_ENSURECODE){
+                String ensureCode = CommonUtils.generateEnsureCode();
+                TencentSMS.sendSMS(account,ensureCode);
+                user.setEnsureCode(ensureCode);
+                user.setEnsureTime(new Date().getTime());
                 userRepository.save(user);
                 result.setCode(RegisterResult.SUCCESS);
             }else{
@@ -116,35 +149,36 @@ public class UserController {
         return result;
     }
 
+    /**
+     * 成功验证验证码之后，帐号将一直处于可改密码状态，没有设置时间限制，这是个隐患
+     *   code ：RegisterResult.ACCOUNT_NOT_EXIST 4 帐号不存在，改个鸡儿密码
+     *          RegisterResult.SUCCESS 1 成功
+     *          RegisterResult.FAIL 0 失败
+     */
     @PutMapping(value = "/register/putPass/{account}")
     public RegisterResult putPassAfterEnsure(@PathVariable("account")String account,@RequestParam("pass")String pass){
         RegisterResult result = new RegisterResult();
         User user = userRepository.findUserByAccount(account);
-        if(user != null && user.getEnsureTime() != 0
-                && (new Date().getTime() - user.getEnsureTime())<ENSURECODE_EXPIRATION){
-            user.setPass(pass);
-            user.setEnsureCode("");
-            user.setEnsureTime(0);
-            userRepository.save(user);
-
-            result.setCode(RegisterResult.SUCCESS);
-            result.setUser(user);
-        }else{
-            result.setCode(RegisterResult.FAIL);
-        }
         if(user == null){
-            result.setCode(RegisterResult.FAIL);
+            result.setCode(RegisterResult.ACCOUNT_NOT_EXIST);
         }else {
-            if(user.getState() == User.WAIT_PASS_RESET && (new Date().getTime() - user.getEnsureTime() < ENSURECODE_EXPIRATION)){
+            if(user.getState() == User.WAIT_PASS_RESET){
                 user.setState(User.COMMON);
                 user.setPass(pass);
                 userRepository.save(user);
+                result.setCode(RegisterResult.SUCCESS);
+            }else{
+                result.setCode(RegisterResult.FAIL);
             }
         }
         return result;
     }
 
-    //TODO
-    //考虑验证码重置的问题，以及重新考虑取消本次注册的定时任务的决定性条件
-    //返回更清晰的错误代码
+    @GetMapping(value = "/{account}")
+    public void add(@PathVariable("account")String account){
+        User user = userRepository.findUserByAccount(account);
+        user.setPass("12345");
+        userRepository.save(user);
+    }
+
 }

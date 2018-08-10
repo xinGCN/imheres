@@ -16,7 +16,9 @@ public class User {
     private String account;
     private String pass;
     private String username;
+    @Column(name = "ensure_code")
     private String ensureCode;
+    @Column(name = "ensure_time")
     private long ensureTime;
     private short state;
 
@@ -28,6 +30,9 @@ public class User {
 
     //普通状态，无特殊事情发生
     public static final short COMMON = 0;
+
+    //注册失败状态，定时会被销毁
+    public static final short REGISTER_OUT_TIME = 3;
 
     public short getState() {
         return state;
