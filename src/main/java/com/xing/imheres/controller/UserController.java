@@ -204,7 +204,7 @@ public class UserController {
     }
 
     /**
-     * 取消喜欢
+     * 取消喜欢1
      */
     @DeleteMapping(value="/user/{account}/likeby")
     public void cancelLikeIt(@PathVariable("account")String account,@RequestParam("mid")Integer mid){
