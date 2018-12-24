@@ -1,6 +1,8 @@
-package com.xing.imheres.entity;
+package com.xing.imheres.entity.back;
 
-import javax.persistence.Entity;
+import com.xing.imheres.entity.sql.Message;
+import com.xing.imheres.entity.sql.User;
+
 import java.util.List;
 
 /**
@@ -42,6 +44,8 @@ public class LoginResult {
     public List<Message> getMsgs() {
         return msgs;
     }
+
+
 
     @Override
     public String toString() {

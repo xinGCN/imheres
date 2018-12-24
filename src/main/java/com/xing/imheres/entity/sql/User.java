@@ -1,6 +1,7 @@
-package com.xing.imheres.entity;
+package com.xing.imheres.entity.sql;
 
 import javax.persistence.*;
+import java.util.List;
 
 /**
  * @author xinG
@@ -12,7 +13,7 @@ public class User {
     @Id
     @SequenceGenerator(name="user_seq", sequenceName="user_seq",allocationSize=1)
     @GeneratedValue(strategy=GenerationType.SEQUENCE, generator="user_seq")
-    private Integer id;
+    private Integer uid;
     private String account;
     private String pass;
     private String username;
@@ -21,6 +22,32 @@ public class User {
     @Column(name = "ensure_time")
     private long ensureTime;
     private short state;
+    private String friends;
+    private String usersig;
+
+
+    public String getUsersig() {
+        return usersig;
+    }
+
+    public void setUsersig(String usersig) {
+        this.usersig = usersig;
+    }
+
+    @Override
+    public String toString() {
+        return "User{" +
+                "uid=" + uid +
+                ", account='" + account + '\'' +
+                ", pass='" + pass + '\'' +
+                ", username='" + username + '\'' +
+                ", ensureCode='" + ensureCode + '\'' +
+                ", ensureTime=" + ensureTime +
+                ", state=" + state +
+                ", friends='" + friends + '\'' +
+                ", usersig='" + usersig + '\'' +
+                '}';
+    }
 
     //等待验证码状态
     public static final short WAIT_ENSURECODE = 1;
@@ -58,12 +85,12 @@ public class User {
         this.ensureTime = ensureTime;
     }
 
-    public Integer getId() {
-        return id;
+    public Integer getUid() {
+        return uid;
     }
 
-    public void setId(Integer id) {
-        this.id = id;
+    public void setUid(Integer uid) {
+        this.uid = uid;
     }
 
     public String getAccount() {
@@ -90,16 +117,12 @@ public class User {
         this.username = username;
     }
 
-    @Override
-    public String toString() {
-        return "User{" +
-                "id=" + id +
-                ", account='" + account + '\'' +
-                ", pass='" + pass + '\'' +
-                ", username='" + username + '\'' +
-                ", ensureCode='" + ensureCode + '\'' +
-                ", ensureTime=" + ensureTime +
-                ", state=" + state +
-                '}';
+    public String getFriends() {
+        return friends;
     }
+
+    public void setFriends(String friends) {
+        this.friends = friends;
+    }
+
 }

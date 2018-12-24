@@ -1,4 +1,6 @@
-package com.xing.imheres.entity;
+package com.xing.imheres.entity.back;
+
+import com.xing.imheres.entity.sql.User;
 
 /**
  * @author xinG

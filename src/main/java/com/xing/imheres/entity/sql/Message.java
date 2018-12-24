@@ -1,4 +1,4 @@
-package com.xing.imheres.entity;
+package com.xing.imheres.entity.sql;
 
 
 import javax.persistence.*;
@@ -8,31 +8,37 @@ import javax.persistence.*;
  * @date 2018/8/2 0002 17:07
  */
 @Entity
-@Table(name = "table1")
+@Table(name = "u_message")
 public class Message {
     @Id
-    @GeneratedValue
-    private Integer id;
+    @SequenceGenerator(name="msg_seq", sequenceName="msg_seq",allocationSize=1)
+    @GeneratedValue(strategy=GenerationType.SEQUENCE, generator="msg_seq")
+    private Integer mid;
     private String account;
     private double lat;
     private double lon;
     private String location;
     private String message;
     private String time;
+    @Column(name = "like_sum")
+    private int like;
+
+    public int getLike() {
+        return like;
+    }
+
+    public void setLike(int like) {
+        this.like = like;
+    }
 
     public Message(){}
 
-//    public Message(int id, String account, String location_1, String location_2, String message) {
-//        this.id = id;
-//        this.account = account;
-//        this.location_1 = location_1;
-//        this.location_2 = location_2;
-//        this.message = message;
-//    }
+    public Integer getMid() {
+        return mid;
+    }
 
-
-    public void setId(Integer id) {
-        this.id = id;
+    public void setMid(Integer mid) {
+        this.mid = mid;
     }
 
     public void setAccount(String account) {
@@ -44,10 +50,7 @@ public class Message {
         this.message = message;
     }
 
-    public Integer getId() {
 
-        return id;
-    }
     public String getAccount() {
         return account;
     }

@@ -5,7 +5,7 @@ package com.xing.imheres.controller;
  * @date 2018/8/2 0002 17:12
  */
 
-import com.xing.imheres.entity.Message;
+import com.xing.imheres.entity.sql.Message;
 import com.xing.imheres.repository.MessageRepository;
 import com.xing.imheres.util.CommonUtils;
 import org.springframework.beans.factory.annotation.Autowired;

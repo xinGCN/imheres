@@ -1,23 +1,21 @@
 package com.xing.imheres.controller;
 
-import com.mysql.jdbc.exceptions.jdbc4.MySQLIntegrityConstraintViolationException;
-import com.sun.xml.internal.bind.v2.TODO;
-import com.xing.imheres.entity.LoginResult;
-import com.xing.imheres.entity.Message;
-import com.xing.imheres.entity.RegisterResult;
-import com.xing.imheres.entity.User;
+import com.xing.imheres.entity.back.LoginResult;
+import com.xing.imheres.entity.back.RegisterResult;
+import com.xing.imheres.entity.sql.Message;
+import com.xing.imheres.entity.sql.User;
 import com.xing.imheres.repository.MessageRepository;
 import com.xing.imheres.repository.UserRepository;
+import com.xing.imheres.service.UserService;
 import com.xing.imheres.util.CommonUtils;
 import com.xing.imheres.util.TencentSMS;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Example;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Date;
 import java.util.List;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.Optional;
 
 /**
  * @author xinG
@@ -29,10 +27,12 @@ public class UserController {
     private UserRepository userRepository;
     @Autowired
     private MessageRepository messageRepository;
+    @Autowired
+    private UserService userService;
 
     private static final int SECOND = 1000;
-    //设置验证码过期时间，短信提示为1分钟，实际时长为75s
-    private static final int ENSURECODE_EXPIRATION = SECOND * 75;
+    //设置验证码过期时间，短信提示为2分钟，实际时长为2min15s
+    private static final int ENSURECODE_EXPIRATION = SECOND * 135;
 
     @GetMapping(value = "/login")
     public LoginResult login(@RequestParam("account") String account,@RequestParam("pass") String pass){
@@ -61,7 +61,7 @@ public class UserController {
      *
      * putPassAfterEnsure函数通过接受帐号以及密码，常规判断通过后重设密码，将用户状态设置为User.Common
      *
-     * 注册流程可以留下来两张垃圾数据 ： 1为验证码验证成功后不设置密码的，这样帐号就一直处于等待设置密码状态，成为一个死帐号
+     * 注册流程可以留下来两种垃圾数据 ： 1为验证码验证成功后不设置密码的，这样帐号就一直处于等待设置密码状态，成为一个死帐号
      *                               2为超时的，这个可以每日定时删数据库中超时状态的帐号比较好解决
      * @param account
      * @return
@@ -71,7 +71,7 @@ public class UserController {
         RegisterResult result = new RegisterResult();
         User user = userRepository.findUserByAccount(account);
         if(user == null || user.getState() == User.REGISTER_OUT_TIME){
-            result.setCode(RegisterResult.FAIL);
+            result.setCode(RegisterResult.SUCCESS);
             String s = CommonUtils.generateEnsureCode();
             TencentSMS.sendSMS(account, s);
             if(user == null)
@@ -92,6 +92,7 @@ public class UserController {
     /**
      *   code : RegisterResult.ACCOUNT_NOT_EXIST 4 账户不存在，根本没经过Register函数
      *          RegisterResult.ENSURECODE_OUT_TIME 3 的确刚刚在注册，但是已经超时
+     *          RegisterResult.ENSURECODE_ERROR 2 验证码错误
      *          RegisterResult.SUCCESS 1 成功
      *          RegisterResult.FAIL 0 失败
      */
@@ -180,5 +181,40 @@ public class UserController {
         user.setPass("12345");
         userRepository.save(user);
     }
+
+    /**
+     * 获取帐号“喜欢”了哪些
+     * @param account 帐号
+     * @return  喜欢了哪些内容
+     */
+    @GetMapping(value="/user/{account}/like")
+    public List<Message> getLike(@PathVariable("account")String account){
+        User user = userRepository.findUserByAccount(account);
+        return messageRepository.selectAllLike(user.getUid());
+    }
+
+    /**
+     * 标记喜欢
+     * @param account 帐号
+     * @param mid 喜欢的内容
+     */
+    @PutMapping(value="/user/{account}/likeby")
+    public void likeIt(@PathVariable("account")String account,@RequestParam("mid")Integer mid){
+        userService.likeByMid(userRepository.findUserByAccount(account).getUid(),mid);
+    }
+
+    /**
+     * 取消喜欢
+     */
+    @DeleteMapping(value="/user/{account}/likeby")
+    public void cancelLikeIt(@PathVariable("account")String account,@RequestParam("mid")Integer mid){
+        userService.cancelLikeByMid(userRepository.findUserByAccount(account).getUid(),mid);
+    }
+
+    @GetMapping(value="/user/{account}/msgs")
+    public List<Message> getMyMsgs(@PathVariable("account")String account){
+        return messageRepository.findMessagesByAccount(account);
+    }
+
 
 }

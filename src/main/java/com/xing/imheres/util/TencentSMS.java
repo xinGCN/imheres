@@ -22,7 +22,7 @@ import java.io.IOException;
 public class TencentSMS {
     private static final String appkey = "11eccbf9a3e682456a745eaa243b024a";
     private static final int appid = 1400124107;
-    private static final String template = "为您的注册验证码，请于1分钟内填写。如非本人操作，请忽略本短信。";
+    private static final String template = "为您的注册验证码，请于2分钟内填写。如非本人操作，请忽略本短信。";
 
     public static SmsSingleSenderResult sendSMS(String tel,String ensureCode){
         try {
